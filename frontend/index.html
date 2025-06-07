@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Real-time Karung Counter</title>
+</head>
+<body>
+  <h1>Total Karung Terkirim: <span id="count">0</span></h1>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:8000/ws/total");
+    ws.onmessage = (event) => {
+      document.getElementById("count").innerText = event.data;
+    };
+    ws.onopen = () => {
+      ws.send("ready"); // ping to keep alive
+    };
+  </script>
+</body>
+</html>

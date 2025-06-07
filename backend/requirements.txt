@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+websockets
+opencv-python
+ultralytics
+numpy
+sqlalchemy
+psycopg2-binary  # untuk PostgreSQL
