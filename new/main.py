@@ -1,0 +1,102 @@
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+# Tracker sederhana
+class EuclideanDistTracker:
+    def __init__(self):
+        self.center_points = {}
+        self.id_count = 0
+
+    def update(self, objects_rect):
+        objects_bbs_ids = []
+        for rect in objects_rect:
+            x, y, w, h = rect
+            cx = int((x + x + w) / 2)
+            cy = int((y + y + h) / 2)
+
+            same_object_detected = False
+            for id, pt in self.center_points.items():
+                dist = np.hypot(cx - pt[0], cy - pt[1])
+                if dist < 40:
+                    self.center_points[id] = (cx, cy)
+                    objects_bbs_ids.append([x, y, w, h, id])
+                    same_object_detected = True
+                    break
+
+            if not same_object_detected:
+                self.center_points[self.id_count] = (cx, cy)
+                objects_bbs_ids.append([x, y, w, h, self.id_count])
+                self.id_count += 1
+
+        new_center_points = {}
+        for obj_bb_id in objects_bbs_ids:
+            _, _, _, _, object_id = obj_bb_id
+            center = self.center_points[object_id]
+            new_center_points[object_id] = center
+
+        self.center_points = new_center_points.copy()
+        return objects_bbs_ids
+
+# Inisialisasi
+model = YOLO("best.pt")
+cap = cv2.VideoCapture("videoplayback.mp4")
+tracker = EuclideanDistTracker()
+
+garis_x = 230
+fps = cap.get(cv2.CAP_PROP_FPS)
+delay = int(1000 / fps)
+in_count = 0
+out_count = 0
+track_hist = {}
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    results = model(frame, conf=0.2, verbose=False)[0]
+    det_boxes = []
+
+    for box in results.boxes:
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        det_boxes.append([x1, y1, x2 - x1, y2 - y1])
+        print(f"Box: {det_boxes}")
+        
+    tracked_objects = tracker.update(det_boxes)
+
+    for obj in tracked_objects:
+        x, y, w, h, obj_id = obj
+        cx = x + w // 2
+        cy = y + h // 2
+
+        if obj_id not in track_hist:
+            track_hist[obj_id] = [cx]
+        else:
+            track_hist[obj_id].append(cx)
+            if len(track_hist[obj_id]) >= 2:
+                prev_x = track_hist[obj_id][-2]
+                curr_x = track_hist[obj_id][-1]
+                if prev_x < garis_x <= curr_x:
+                    in_count += 1
+                    print(f"IN ↑ ID {obj_id}")
+                    track_hist[obj_id] = [9999, 9999]
+                elif prev_x > garis_x >= curr_x:
+                    out_count += 1
+                    print(f"OUT ↓ ID {obj_id}")
+                    track_hist[obj_id] = [9999, 9999]
+
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
+        cv2.putText(frame, f"ID #{obj_id} KARUNG", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 3)
+
+    cv2.line(frame, (garis_x, 0), (garis_x, frame.shape[0]), (255, 255, 255), 2)
+    cv2.putText(frame, f'in: {in_count}', (garis_x + 10, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.putText(frame, f'out: {out_count}', (garis_x + 10, 340), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+    cv2.imshow("CCTV Tracker", frame)
+    if cv2.waitKey(delay) == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
