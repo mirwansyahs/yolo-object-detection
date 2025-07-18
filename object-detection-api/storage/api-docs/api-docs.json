@@ -1,0 +1,260 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Object Detection API",
+        "description": "API untuk dashboard deteksi karung beras",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Ambil semua data pergerakan karung beras",
+                "operationId": "dcf90ce65219b0ad51fc32e9f7f69843",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "camera_id": {
+                                                "type": "integer",
+                                                "example": 2
+                                            },
+                                            "direction": {
+                                                "type": "string",
+                                                "example": "in"
+                                            },
+                                            "detected_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-06-29T09:30:00Z"
+                                            },
+                                            "sack_count": {
+                                                "type": "integer",
+                                                "example": 5
+                                            },
+                                            "image_path": {
+                                                "type": "string",
+                                                "example": "images/in_001.jpg"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/profile": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Ambil semua data profile pengguna",
+                "operationId": "4ed7ca3229d16b0b14785695794359e6",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "camera_id": {
+                                                "type": "integer",
+                                                "example": 2
+                                            },
+                                            "direction": {
+                                                "type": "string",
+                                                "example": "in"
+                                            },
+                                            "detected_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-06-29T09:30:00Z"
+                                            },
+                                            "sack_count": {
+                                                "type": "integer",
+                                                "example": 5
+                                            },
+                                            "image_path": {
+                                                "type": "string",
+                                                "example": "images/in_001.jpg"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/sack-movements": {
+            "get": {
+                "tags": [
+                    "Sack Movements"
+                ],
+                "summary": "Ambil semua data pergerakan karung beras",
+                "operationId": "5350d558fda00e89504bfc93e742fe0c",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "camera_id": {
+                                                "type": "integer",
+                                                "example": 2
+                                            },
+                                            "direction": {
+                                                "type": "string",
+                                                "example": "in"
+                                            },
+                                            "detected_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-06-29T09:30:00Z"
+                                            },
+                                            "sack_count": {
+                                                "type": "integer",
+                                                "example": 5
+                                            },
+                                            "image_path": {
+                                                "type": "string",
+                                                "example": "images/in_001.jpg"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Sack Movements"
+                ],
+                "summary": "Simpan data pergerakan karung",
+                "operationId": "3d23a67cdfdc63d4c3260d13f7679462",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "camera_id",
+                                    "direction",
+                                    "detected_at",
+                                    "sack_count"
+                                ],
+                                "properties": {
+                                    "camera_id": {
+                                        "type": "integer"
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "enum": [
+                                            "in",
+                                            "out"
+                                        ]
+                                    },
+                                    "detected_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "sack_count": {
+                                        "type": "integer"
+                                    },
+                                    "image_path": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Auth"
+        },
+        {
+            "name": "Sack Movements",
+            "description": "Sack Movements"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ]
+}

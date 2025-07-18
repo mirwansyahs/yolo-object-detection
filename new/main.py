@@ -1,6 +1,34 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import requests
+from datetime import datetime, timezone
+import pytz
+import threading
+
+
+# Untuk mengirim data ke API Laravel
+def send_to_api(camera_id, direction):
+    def _send():
+        jakarta = pytz.timezone("Asia/Jakarta")
+        jakarta_time = datetime.now(jakarta)
+        url = "http://localhost:8000/api/sack-movements"
+        payload = {
+            "camera_id": camera_id,
+            "direction": direction,
+            "detected_at": jakarta_time.isoformat(),
+            "sack_count": 1,
+            "image_path": ""
+        }
+
+        try:
+            response = requests.post(url, json=payload, timeout=3)
+            print(f"[API] Status: {response.status_code} | Response: {response.text}")
+        except Exception as e:
+            print(f"[API ERROR] {e}")
+
+    # Kirim request tanpa menunggu
+    threading.Thread(target=_send).start()
 
 # Tracker sederhana
 class EuclideanDistTracker:
@@ -81,10 +109,16 @@ while True:
                     in_count += 1
                     print(f"IN ↑ ID {obj_id}")
                     track_hist[obj_id] = [9999, 9999]
+                    
+                    # Kirim ke API Laravel
+                    send_to_api(camera_id=1, direction="in")
                 elif prev_x > garis_x >= curr_x:
                     out_count += 1
                     print(f"OUT ↓ ID {obj_id}")
                     track_hist[obj_id] = [9999, 9999]
+
+                    # Kirim ke API Laravel
+                    send_to_api(camera_id=1, direction="out")
 
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
