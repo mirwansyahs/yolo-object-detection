@@ -68,10 +68,12 @@ class EuclideanDistTracker:
 
 # Inisialisasi
 model = YOLO("best.pt")
-cap = cv2.VideoCapture("videoplayback.mp4")
+# cap = cv2.VideoCapture("videoplayback.mp4")
+cap = cv2.VideoCapture("rtsp://admin:admin@192.168.1.18:8554/Streaming/Channels/101",
+    cv2.CAP_FFMPEG)
 tracker = EuclideanDistTracker()
 
-garis_x = 230
+garis_x = 570
 fps = cap.get(cv2.CAP_PROP_FPS)
 delay = int(1000 / fps)
 in_count = 0

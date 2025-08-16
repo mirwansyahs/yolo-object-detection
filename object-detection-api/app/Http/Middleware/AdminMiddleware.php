@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\App;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -15,6 +17,8 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        App::setLocale('id'); // Laravel locale
+        Carbon::setLocale('id'); // Carbon locale
         // Cek jika tidak login melalui guard 'apps'
         if (!auth()->guard('web')->check()) {
             // Kalau request bukan AJAX/JSON, redirect ke login

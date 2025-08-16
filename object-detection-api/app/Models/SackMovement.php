@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 
 class SackMovement extends Model
 {
@@ -26,6 +27,17 @@ class SackMovement extends Model
     public function camera()
     {
         return $this->belongsTo(Camera::class);
+    }
+    
+    public function getDirectionLabelAttribute()
+    {
+        return $this->direction === 'in' ? 'Karung Masuk' : 'Karung Keluar';
+    }
+
+    
+    public function getDetectedAtLabelAttribute()
+    {
+        return optional($this->detected_at)->translatedFormat('l, d M Y H:i:s'); 
     }
 
     // Relasi ke User (jika digunakan)

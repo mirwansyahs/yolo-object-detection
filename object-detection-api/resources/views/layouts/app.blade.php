@@ -16,7 +16,7 @@
     <!-- App Css-->
     <link href="{{ asset('css/app.min.css') }}" id="app-style" rel="stylesheet" type="text/css" />
 
-    @stack('styles') {{-- Untuk tambahan CSS --}}
+    @yield('styles') {{-- Untuk tambahan CSS --}}
 </head>
 <body data-sidebar="dark">
 
@@ -72,6 +72,6 @@
 
     <!-- App js -->
     <script src="{{ asset('js/app.js') }}"></script>
-    @stack('scripts') {{-- Untuk tambahan JS --}}
+    @yield('scripts') {{-- Untuk tambahan JS --}}
 </body>
 </html>

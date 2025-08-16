@@ -13,7 +13,8 @@
         "laravel/socialite": "^5.2",
         "laravel/tinker": "^2.10.1",
         "predis/predis": "^2.3",
-        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1"
+        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1",
+        "yajra/laravel-datatables": "^11.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

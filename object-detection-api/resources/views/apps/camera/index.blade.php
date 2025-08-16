@@ -29,8 +29,7 @@
                         <tr>
                             <th>Camera</th>
                             <th>Location</th>
-                            <th>Direction</th>
-                            <th>Detected At</th>
+                            <th>Created At</th>
                         </tr>
                     </thead>
 
@@ -63,6 +62,8 @@
 
 <!-- Datatables init -->
 <script src="{{ asset('js/pages/datatables.init.js') }}"></script>
+
+<script src="{{ asset('js/pages/datatables.init.js') }}"></script>
 <script>
     $(document).ready(function () {
         $('#sackMovementsTable').DataTable({
@@ -70,12 +71,11 @@
             serverSide: true,
             responsive: true,
             lengthChange: false,
-            ajax: "{{ route('apps.sack_movements.index') }}", // Ganti dengan route kamu
+            ajax: "{{ route('apps.cameras.index') }}", // Ganti dengan route kamu
             columns: [
-                { data: 'camera.name', name: 'camera.name' },
-                { data: 'camera.location', name: 'camera.location' },
-                { data: 'direction', name: 'direction' },
-                { data: 'detected_at', name: 'detected_at' }
+                { data: 'name', name: 'name' },
+                { data: 'location', name: 'location' },
+                { data: 'created_at', name: 'created_at' }
             ],
             buttons: ['copy', 'excel', 'pdf', 'colvis']
         }).buttons().container().appendTo('#sackMovementsTable_wrapper .col-md-6:eq(0)');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\apps;
 
 use App\Http\Controllers\Controller;
+use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
 use App\Models\SackMovement;
 use Illuminate\Support\Facades\Redis;
@@ -11,6 +12,19 @@ class SackMovementsController extends Controller
 {
     public function index(Request $request)
     {
+        if ($request->ajax()) {
+            $data = SackMovement::with('camera')->orderBy('detected_at', 'desc');
+            // dd($data);
+            return DataTables::of($data)
+                ->addColumn('direction', function ($row) {
+                    return $row->direction_label;
+                })
+                ->addColumn('detected_at', function ($row) {
+                    return $row->detected_at_label;
+                })
+                ->make(true);
+        }
+        
         return view('apps.sack_movements.index');
     }
 

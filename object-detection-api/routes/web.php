@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Apps\HomeController;
 use App\Http\Controllers\Apps\SackMovementsController;
+use App\Http\Controllers\Apps\CamerasController;
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle']);
@@ -21,6 +22,6 @@ Route::middleware(['admin'])->prefix('apps')->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
 
-    Route::get('/sack-movements', [SackMovementsController::class, 'index'])->name('apps.sack_movements');
-    Route::get('/cameras', [HomeController::class, 'cameras'])->name('apps.cameras');
+    Route::get('/sack-movements', [SackMovementsController::class, 'index'])->name('apps.sack_movements.index');
+    Route::get('/cameras', [CamerasController::class, 'index'])->name('apps.cameras.index');
 });

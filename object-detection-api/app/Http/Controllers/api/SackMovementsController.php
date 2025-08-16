@@ -94,7 +94,9 @@ class SackMovementsController extends Controller
             ]);    
 
             // dispatch(new ProcessSackDetection($validated));
-            dispatch((new ProcessSackDetection($validated))->onConnection('rabbitmq')->onQueue('karung_detection'))->delay(now()->addSeconds(30));
+            
+            // dispatch((new ProcessSackDetection($validated))->onConnection('rabbitmq')->onQueue('karung_detection'))->delay(now()->addSeconds(30));
+            dispatch((new ProcessSackDetection($validated)));
 
 
             return response()->json(['message' => 'Data pergerakan karung berhasil disimpan.'], 201);

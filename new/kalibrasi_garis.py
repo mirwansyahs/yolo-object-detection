@@ -2,8 +2,10 @@ import cv2
 from ultralytics import YOLO
 
 # Load model YOLOv8
-model = YOLO("karung.pt")  # Ganti dengan model kamu
-cap = cv2.VideoCapture("videoplayback.mp4")
+model = YOLO("best.pt")  # Ganti dengan model kamu
+# cap = cv2.VideoCapture("videoplayback.mp4")
+cap = cv2.VideoCapture("rtsp://admin:admin@192.168.1.18:8554/Streaming/Channels/101",
+    cv2.CAP_FFMPEG)
 
 garis_x = 380  # posisi awal garis vertikal
 step = 5       # step pergeseran manual garis
