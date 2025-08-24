@@ -1,13 +1,16 @@
+import os
+os.environ["ULTRALYTICS_CONFIG_DIR"] = "C:/Users/Irwansyah/Favorites/Github/yolo-object-detection/new/yolo_config"
+
 import cv2
 import numpy as np
-from ultralytics import YOLO
+from ultralytics import settings, YOLO
 import requests
-from datetime import datetime, timezone
+from datetime import datetime
 import pytz
 import threading
+import time
 
-
-# Untuk mengirim data ke API Laravel
+# ----------- API worker (tetap) -----------
 def send_to_api(camera_id, direction):
     def _send():
         jakarta = pytz.timezone("Asia/Jakarta")
@@ -20,17 +23,49 @@ def send_to_api(camera_id, direction):
             "sack_count": 1,
             "image_path": ""
         }
-
         try:
-            response = requests.post(url, json=payload, timeout=3)
-            print(f"[API] Status: {response.status_code} | Response: {response.text}")
+            requests.post(url, json=payload, timeout=3)
         except Exception as e:
+            # log ringan saja
             print(f"[API ERROR] {e}")
+    threading.Thread(target=_send, daemon=True).start()
 
-    # Kirim request tanpa menunggu
-    threading.Thread(target=_send).start()
+# ----------- Reader: selalu simpan frame TERBARU -----------
+class VideoStream:
+    def __init__(self, src):
+        self.cap = cv2.VideoCapture(src, cv2.CAP_FFMPEG)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        self.lock = threading.Lock()
+        self.frame = None
+        self.ret = False
+        self.running = True
+        t = threading.Thread(target=self.update, daemon=True)
+        t.start()
 
-# Tracker sederhana
+    def update(self):
+        # buang frame lama, simpan terakhir
+        while self.running:
+            ret, f = self.cap.read()
+            if ret:
+                with self.lock:
+                    self.ret = True
+                    self.frame = f
+            # opsional: purge buffer (kadang bantu)
+            # while self.cap.grab():
+            #     pass
+
+    def read(self):
+        with self.lock:
+            return self.ret, None if self.frame is None else self.frame.copy()
+
+    def release(self):
+        self.running = False
+        try:
+            self.cap.release()
+        except:
+            pass
+
+# ----------- Tracker sederhana (punya kamu) -----------
 class EuclideanDistTracker:
     def __init__(self):
         self.center_points = {}
@@ -40,65 +75,118 @@ class EuclideanDistTracker:
         objects_bbs_ids = []
         for rect in objects_rect:
             x, y, w, h = rect
-            cx = int((x + x + w) / 2)
-            cy = int((y + y + h) / 2)
-
-            same_object_detected = False
-            for id, pt in self.center_points.items():
-                dist = np.hypot(cx - pt[0], cy - pt[1])
-                if dist < 40:
+            cx = (x + x + w) // 2
+            cy = (y + y + h) // 2
+            same = False
+            for id, (px, py) in list(self.center_points.items()):
+                if np.hypot(cx - px, cy - py) < 40:
                     self.center_points[id] = (cx, cy)
                     objects_bbs_ids.append([x, y, w, h, id])
-                    same_object_detected = True
+                    same = True
                     break
-
-            if not same_object_detected:
+            if not same:
                 self.center_points[self.id_count] = (cx, cy)
                 objects_bbs_ids.append([x, y, w, h, self.id_count])
                 self.id_count += 1
 
-        new_center_points = {}
-        for obj_bb_id in objects_bbs_ids:
-            _, _, _, _, object_id = obj_bb_id
-            center = self.center_points[object_id]
-            new_center_points[object_id] = center
-
-        self.center_points = new_center_points.copy()
+        new_cp = {}
+        for _, _, _, _, oid in objects_bbs_ids:
+            new_cp[oid] = self.center_points[oid]
+        self.center_points = new_cp
         return objects_bbs_ids
 
-# Inisialisasi
-model = YOLO("best.pt")
-# cap = cv2.VideoCapture("videoplayback.mp4")
-cap = cv2.VideoCapture("rtsp://admin:admin@192.168.1.18:8554/Streaming/Channels/101",
-    cv2.CAP_FFMPEG)
-tracker = EuclideanDistTracker()
+# ----------- YOLO settings -----------
+settings.update({
+    "runs_dir": "C:/Users/Irwansyah/Favorites/Github/yolo-object-detection/new/runs/detections",
+})
 
-garis_x = 570
-fps = cap.get(cv2.CAP_PROP_FPS)
-delay = int(1000 / fps)
+# Inisialisasi model (pakai GPU kalau ada)
+model = YOLO("./my_model/best.pt")
+try:
+    model.to("cuda")
+    use_cuda = True
+except Exception:
+    use_cuda = False
+
+# ----------- RTSP (pakai SD) -----------
+rtsp_url = "rtsp://admin:admin@192.168.1.23:8554/Streaming/Channels/102"
+cap = VideoStream(rtsp_url)
+
+tracker = EuclideanDistTracker()
+garis_x = 270
 in_count = 0
 out_count = 0
 track_hist = {}
 
+# throttle: deteksi tiap N frame (atau target fps inferensi)
+SKIP_N = 2             # proses 1 dari 2 frame → kira-kira 50% beban
+TARGET_INFER_FPS = 10  # alternatif: batasi infer ~10 FPS
+last_infer_t = 0
+frame_idx = 0
+
+# kecilkan teks & garis biar drawing lebih ringan
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
 while True:
     ret, frame = cap.read()
-    if not ret:
-        break
+    if not ret or frame is None:
+        # jangan break keras; tunggu frame berikutnya
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+        continue
 
-    results = model(frame, conf=0.2, verbose=False)[0]
+    # --- Resize ke lebar 640 (pertahankan rasio) untuk percepat ---
+    h, w = frame.shape[:2]
+    if w > 640:
+        new_w = 640
+        new_h = int(h * (640 / w))
+        frame_infer = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    else:
+        frame_infer = frame
+
+    # --- Throttle inferensi: skip frame atau target fps ---
+    do_infer = False
+    frame_idx += 1
+    if frame_idx % SKIP_N == 0:
+        do_infer = True
+    # atau pakai batas fps infer
+    now = time.time()
+    if now - last_infer_t < 1.0 / TARGET_INFER_FPS:
+        do_infer = False
+
     det_boxes = []
+    if do_infer:
+        # imgsz + half precision (kalau cuda)
+        results = model.predict(
+            frame_infer,
+            conf=0.25,
+            imgsz=640,
+            device=0 if use_cuda else None,
+            half=True if use_cuda else False,
+            verbose=False
+        )[0]
+        last_infer_t = now
 
-    for box in results.boxes:
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        det_boxes.append([x1, y1, x2 - x1, y2 - y1])
-        print(f"Box: {det_boxes}")
-        
+        # scale back boxes ke ukuran frame asli bila perlu
+        sx = w / frame_infer.shape[1]
+        sy = h / frame_infer.shape[0]
+
+        for box in results.boxes:
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            # kembalikan ke skala asli kalau tadi di-resize
+            x1 = int(x1 * sx); y1 = int(y1 * sy); x2 = int(x2 * sx); y2 = int(y2 * sy)
+            det_boxes.append([x1, y1, x2 - x1, y2 - y1])
+
+        # NOTE: matikan print per-frame, itu bikin patah-patah
+        # print(f"Box count: {len(det_boxes)}")
+
+    # tetap update tracker walau det_boxes kosong (akan mempertahankan ID sebentar)
     tracked_objects = tracker.update(det_boxes)
 
-    for obj in tracked_objects:
-        x, y, w, h, obj_id = obj
-        cx = x + w // 2
-        cy = y + h // 2
+    # gambar ringan
+    for x, y, w0, h0, obj_id in tracked_objects:
+        cx = x + w0 // 2
+        cy = y + h0 // 2
 
         if obj_id not in track_hist:
             track_hist[obj_id] = [cx]
@@ -109,29 +197,24 @@ while True:
                 curr_x = track_hist[obj_id][-1]
                 if prev_x < garis_x <= curr_x:
                     in_count += 1
-                    print(f"IN ↑ ID {obj_id}")
                     track_hist[obj_id] = [9999, 9999]
-                    
-                    # Kirim ke API Laravel
                     send_to_api(camera_id=1, direction="in")
                 elif prev_x > garis_x >= curr_x:
                     out_count += 1
-                    print(f"OUT ↓ ID {obj_id}")
                     track_hist[obj_id] = [9999, 9999]
-
-                    # Kirim ke API Laravel
                     send_to_api(camera_id=1, direction="out")
 
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
-        cv2.putText(frame, f"ID #{obj_id} KARUNG", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 3)
+        cv2.rectangle(frame, (x, y), (x + w0, y + h0), (0, 255, 0), 2)
+        cv2.circle(frame, (cx, cy), 3, (0, 0, 255), -1)
+        cv2.putText(frame, f"ID {obj_id}", (x, max(0, y - 6)), FONT, 0.5, (255, 255, 0), 1, cv2.LINE_AA)
 
-    cv2.line(frame, (garis_x, 0), (garis_x, frame.shape[0]), (255, 255, 255), 2)
-    cv2.putText(frame, f'in: {in_count}', (garis_x + 10, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-    cv2.putText(frame, f'out: {out_count}', (garis_x + 10, 340), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.line(frame, (garis_x, 0), (garis_x, frame.shape[0]), (255, 255, 255), 1)
+    cv2.putText(frame, f'in:{in_count} out:{out_count}', (garis_x + 8, 24), FONT, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
+    
+    mirrored = cv2.flip(frame, 1)
 
-    cv2.imshow("CCTV Tracker", frame)
-    if cv2.waitKey(delay) == 27:
+    cv2.imshow("CCTV Tracker", mirrored)
+    if cv2.waitKey(1) & 0xFF == 27:
         break
 
 cap.release()

@@ -1,7 +1,7 @@
 import cv2
 from ultralytics import YOLO
 
-model = YOLO("best.pt")
+model = YOLO("./my_model/best.pt")
 
 video_path = 'videoplayback.mp4'
 cap = cv2.VideoCapture(video_path)

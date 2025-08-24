@@ -12,8 +12,13 @@ class SackMovementsController extends Controller
 {
     public function index(Request $request)
     {
+        // Hitung jumlah karung masuk dan keluar
+        $countIn = SackMovement::where('direction', 'in')->count();
+        $countOut = SackMovement::where('direction', 'out')->count();
+        
         if ($request->ajax()) {
             $data = SackMovement::with('camera')->orderBy('detected_at', 'desc');
+
             // dd($data);
             return DataTables::of($data)
                 ->addColumn('direction', function ($row) {
@@ -25,7 +30,7 @@ class SackMovementsController extends Controller
                 ->make(true);
         }
         
-        return view('apps.sack_movements.index');
+        return view('apps.sack_movements.index', compact('countIn', 'countOut'));
     }
 
     public function sackMovements(Request $request)

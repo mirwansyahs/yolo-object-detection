@@ -1,7 +1,7 @@
 import os
 from ultralytics import YOLO
 
-model = YOLO("best.pt")  # file model hasil training kamu
+model = YOLO("./my_model/best.pt")  # file model hasil training kamu
 frames_dir = "frames"  # direktori berisi frame gambar
 labels_dir = "frames/labels"  # direktori untuk menyimpan anotasi
 os.makedirs(labels_dir, exist_ok=True)

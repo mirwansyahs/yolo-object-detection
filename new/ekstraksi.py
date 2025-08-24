@@ -2,10 +2,11 @@ import cv2
 import os
 
 # Path video input
-video_path = "videoplayback.mp4"
+name_of_video = "video7"
+video_path = f"./source_video/{name_of_video}.mp4"
 
 # Folder output
-output_dir = "frames"
+output_dir = f"./frames/{name_of_video}"
 os.makedirs(output_dir, exist_ok=True)
 
 # Buka video
