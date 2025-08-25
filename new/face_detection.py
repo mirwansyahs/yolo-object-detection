@@ -1,8 +1,12 @@
 import cv2
 
 # RTSP URL Kamera
-rtsp_url = "rtsp://admin:admin@192.168.1.23:8554/Streaming/Channels/102"
+# rtsp_url = "rtsp://admin:admin@192.168.1.23:8554/Streaming/Channels/102"
+# rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.112:554/cam/realmonitor?channel=2&subtype=1&unicast=true&proto=Onvif"
 
+# rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.112:554/cam/realmonitor?channel=2&subtype=1&unicast=true&proto=Onvif"
+rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.208:554/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif"
+# rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.112:7001/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif"
 # Load Haar Cascade untuk deteksi wajah
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 

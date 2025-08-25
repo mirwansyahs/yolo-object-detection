@@ -109,16 +109,19 @@ except Exception:
     use_cuda = False
 
 # ----------- RTSP (pakai SD) -----------
-rtsp_url = "rtsp://admin:admin@192.168.1.23:8554/Streaming/Channels/102"
+# rtsp_url = "rtsp://admin:admin@192.168.1.23:8554/Streaming/Channels/102"
+rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.112:554/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif"
+# rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.208:554/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif"
+# rtsp_url = "rtsp://admin:C0b@dulu@10.54.8.208:7001/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif"
 cap = VideoStream(rtsp_url)
 
 tracker = EuclideanDistTracker()
-garis_x = 270
+garis_x = 300
 in_count = 0
 out_count = 0
 track_hist = {}
 
-# throttle: deteksi tiap N frame (atau target fps inferensi)
+# throttle: deteksi tiap N frame (atau target fps inferensi) rtsp://10.54.8.112:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif
 SKIP_N = 2             # proses 1 dari 2 frame → kira-kira 50% beban
 TARGET_INFER_FPS = 10  # alternatif: batasi infer ~10 FPS
 last_infer_t = 0
